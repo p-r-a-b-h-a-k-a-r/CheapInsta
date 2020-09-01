@@ -1,4 +1,4 @@
-import React, { useReducer } from 'react';
+import React, { useReducer, useEffect } from 'react';
 import { validate } from '../Validators/validators';
 import './Input.css';
 
@@ -10,37 +10,36 @@ const inputReducer = (state, action) => {
         value: action.val,
         isValid: validate(action.val, action.validators),
       };
-    case 'TOUCH':
+    case 'TOUCH': {
       return {
         ...state,
         isTouched: true,
       };
+    }
     default:
       return state;
   }
 };
 
-const Input = ({
-  id,
-  element,
-  label,
-  type,
-  placeholder,
-  rows,
-  errorText,
-  validators,
-}) => {
-  const [initialState, dispatch] = useReducer(inputReducer, {
-    value: '',
-    isValid: false,
+const Input = (props) => {
+  const [inputState, dispatch] = useReducer(inputReducer, {
+    value: props.initialValue || '',
     isTouched: false,
+    isValid: props.initialValid || false,
   });
 
-  const changeHandler = (e) => {
+  const { id, onInput } = props;
+  const { value, isValid } = inputState;
+
+  useEffect(() => {
+    onInput(id, value, isValid);
+  }, [id, value, isValid, onInput]);
+
+  const changeHandler = (event) => {
     dispatch({
       type: 'CHANGE',
-      val: e.target.value,
-      validators: validators,
+      val: event.target.value,
+      validators: props.validators,
     });
   };
 
@@ -50,37 +49,35 @@ const Input = ({
     });
   };
 
-  const elementType =
-    element === 'input' ? (
+  const element =
+    props.element === 'input' ? (
       <input
-        id={id}
-        type={type}
-        placeholder={placeholder}
+        id={props.id}
+        type={props.type}
+        placeholder={props.placeholder}
         onChange={changeHandler}
         onBlur={touchHandler}
-        value={initialState.value}
+        value={inputState.value}
       />
     ) : (
       <textarea
-        id={id}
-        rows={rows || 3}
+        id={props.id}
+        rows={props.rows || 3}
         onChange={changeHandler}
         onBlur={touchHandler}
-        value={initialState.value}
+        value={inputState.value}
       />
     );
 
   return (
     <div
       className={`form-control ${
-        !initialState.isValid &&
-        initialState.isTouched &&
-        `form-control--invalid`
+        !inputState.isValid && inputState.isTouched && 'form-control--invalid'
       }`}
     >
-      <label htmlFor={id}>{label}</label>
-      {elementType}
-      {!initialState.isValid && initialState.isTouched && <p>{errorText}</p>}
+      <label htmlFor={props.id}>{props.label}</label>
+      {element}
+      {!inputState.isValid && inputState.isTouched && <p>{props.errorText}</p>}
     </div>
   );
 };
